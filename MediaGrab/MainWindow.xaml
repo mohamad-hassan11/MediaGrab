@@ -1,80 +1,234 @@
 ﻿<Window x:Class="MediaGrab.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:MediaGrab"
-        mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid Margin="20">
-        <StackPanel>
+        Title="MediaGrab"
+        Width="720"
+        Height="590"
+        MinWidth="620"
+        MinHeight="540"
+        WindowStartupLocation="CenterScreen"
+        Background="#F5F6F8">
 
-            <TextBlock
-            Text="Media URL"
-            Margin="0,0,0,5" />
+    <Window.Resources>
 
-            <TextBox
-            x:Name="UrlTextBox"
-            Height="30"
-            Margin="0,0,0,10" />
+        <!-- Primary button -->
+        <Style x:Key="PrimaryButton" TargetType="Button">
+            <Setter Property="Height" Value="44"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="#2563EB"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Padding" Value="16,0"/>
+        </Style>
 
-            <TextBlock
-            Text="Save to"
-            Margin="0,5,0,5" />
+        <!-- Secondary button -->
+        <Style x:Key="SecondaryButton" TargetType="Button">
+            <Setter Property="Height" Value="38"/>
+            <Setter Property="Padding" Value="14,0"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#D1D5DB"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
 
-            <Grid Margin="0,0,0,15">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
+        <!-- Input -->
+        <Style x:Key="InputTextBox" TargetType="TextBox">
+            <Setter Property="Height" Value="42"/>
+            <Setter Property="Padding" Value="12,0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#D1D5DB"/>
+        </Style>
+
+        <!-- Labels -->
+        <Style x:Key="InputLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#374151"/>
+            <Setter Property="Margin" Value="0,0,0,7"/>
+        </Style>
+
+        <!-- ComboBox -->
+        <Style x:Key="InputComboBox" TargetType="ComboBox">
+            <Setter Property="Height" Value="42"/>
+            <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Background" Value="White"/>
+        </Style>
+
+    </Window.Resources>
+
+    <Grid>
+
+        <Border
+            Width="640"
+            Margin="30"
+            Padding="32"
+            Background="White"
+            CornerRadius="12"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Top">
+
+            <Border.Effect>
+                <DropShadowEffect
+                    BlurRadius="20"
+                    ShadowDepth="2"
+                    Opacity="0.08"/>
+            </Border.Effect>
+
+            <StackPanel>
+
+                <!-- Header -->
+
+                <TextBlock
+                    Text="MediaGrab"
+                    FontSize="28"
+                    FontWeight="Bold"
+                    Foreground="#111827"/>
+
+                <TextBlock
+                    Text="Download audio and video from supported media links."
+                    FontSize="14"
+                    Foreground="#6B7280"
+                    Margin="0,5,0,30"/>
+
+                <!-- URL -->
+
+                <TextBlock
+                    Text="MEDIA URL"
+                    Style="{StaticResource InputLabel}"/>
 
                 <TextBox
-                x:Name="OutputFolderTextBox"
-                Grid.Column="0"
-                Height="30"
-                IsReadOnly="True"
-                VerticalContentAlignment="Center"
-                Margin="0,0,10,0" />
+                    x:Name="UrlTextBox"
+                    Style="{StaticResource InputTextBox}"
+                    Margin="0,0,0,22"/>
+
+                <!-- Format + quality -->
+
+                <Grid Margin="0,0,0,22">
+
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="20"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+
+                        <TextBlock
+                            Text="DOWNLOAD AS"
+                            Style="{StaticResource InputLabel}"/>
+
+                        <ComboBox
+                            x:Name="FormatComboBox"
+                            Style="{StaticResource InputComboBox}"
+                            SelectionChanged="FormatComboBox_SelectionChanged">
+
+                            <ComboBoxItem
+                                Content="Audio (MP3)"
+                                Tag="mp3"/>
+
+                            <ComboBoxItem
+                                Content="Video (MP4)"
+                                Tag="video"/>
+
+                        </ComboBox>
+
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2">
+
+                        <TextBlock
+                            Text="QUALITY"
+                            Style="{StaticResource InputLabel}"/>
+
+                        <ComboBox
+                            x:Name="QualityComboBox"
+                            Style="{StaticResource InputComboBox}"/>
+
+                    </StackPanel>
+
+                </Grid>
+
+                <!-- Output -->
+
+                <TextBlock
+                    Text="SAVE TO"
+                    Style="{StaticResource InputLabel}"/>
+
+                <Grid Margin="0,0,0,24">
+
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBox
+                        x:Name="OutputFolderTextBox"
+                        Grid.Column="0"
+                        Style="{StaticResource InputTextBox}"
+                        IsReadOnly="True"/>
+
+                    <Button
+                        x:Name="BrowseButton"
+                        Grid.Column="2"
+                        Width="100"
+                        Content="Browse..."
+                        Style="{StaticResource SecondaryButton}"
+                        Click="BrowseButton_Click"/>
+
+                </Grid>
+
+                <!-- Download -->
 
                 <Button
-                Grid.Column="1"
-                x:Name="BrowseButton"
-                Content="Browse..."
-                Width="90"
-                Height="30"
-                Click="BrowseButton_Click" />
-            </Grid>
+                    x:Name="DownloadButton"
+                    Content="Download"
+                    Style="{StaticResource PrimaryButton}"
+                    Click="DownloadButton_Click"
+                    Margin="0,0,0,24"/>
 
-            <Button
-            x:Name="DownloadButton"
-            Content="Download MP3"
-            Height="35"
-            Click="DownloadButton_Click"
-            Margin="0,0,0,20" />
-            <Button
-            x:Name="OpenFolderButton"
-            Content="Open Download Folder"
-            Height="30"
-            Click="OpenFolderButton_Click"
-            Margin="0,0,0,20" />
+                <!-- Status -->
 
-            <TextBlock
-            x:Name="StatusTextBlock"
-            Text="Ready"
-            Margin="0,0,0,5" />
+                <Grid Margin="0,0,0,7">
 
-            <ProgressBar
-            x:Name="DownloadProgressBar"
-            Height="20"
-            Minimum="0"
-            Maximum="100"
-            Value="0"
-            Margin="0,0,0,5" />
+                    <TextBlock
+                        x:Name="StatusTextBlock"
+                        Text="Ready"
+                        Foreground="#374151"/>
 
-            <TextBlock
-            x:Name="ProgressDetailsTextBlock"
-            HorizontalAlignment="Right" />
+                    <TextBlock
+                        x:Name="ProgressDetailsTextBlock"
+                        HorizontalAlignment="Right"
+                        Foreground="#6B7280"/>
 
-        </StackPanel>
+                </Grid>
+
+                <ProgressBar
+                    x:Name="DownloadProgressBar"
+                    Height="7"
+                    Minimum="0"
+                    Maximum="100"
+                    Value="0"
+                    Margin="0,0,0,20"/>
+
+                <!-- Folder -->
+
+                <Button
+                    x:Name="OpenFolderButton"
+                    Content="Open download folder"
+                    HorizontalAlignment="Left"
+                    Style="{StaticResource SecondaryButton}"
+                    Click="OpenFolderButton_Click"/>
+
+            </StackPanel>
+
+        </Border>
+
     </Grid>
+
 </Window>

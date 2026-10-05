@@ -4,6 +4,7 @@ using Microsoft.Win32;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace MediaGrab;
 
@@ -17,7 +18,10 @@ public partial class MainWindow : Window
 
         _downloadService = new DownloadService();
 
-        OutputFolderTextBox.Text = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),"Downloads");
+        OutputFolderTextBox.Text = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+        FormatComboBox.SelectedIndex = 0;
+
+        LoadQualityOptions(); 
     }
 
     private void BrowseButton_Click(object sender, RoutedEventArgs e)
@@ -109,4 +113,99 @@ public partial class MainWindow : Window
             UseShellExecute = true
         });
     }
+
+    private void LoadQualityOptions()
+    {
+        QualityComboBox.Items.Clear();
+
+        var selectedFormat =
+            (FormatComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString();
+
+        if (selectedFormat == "video")
+        {
+            QualityComboBox.Items.Add(
+                new ComboBoxItem
+                {
+                    Content = "Best available",
+                    Tag = "best"
+                });
+
+            QualityComboBox.Items.Add(
+                new ComboBoxItem
+                {
+                    Content = "2160p (4K)",
+                    Tag = "2160"
+                });
+
+            QualityComboBox.Items.Add(
+                new ComboBoxItem
+                {
+                    Content = "1440p",
+                    Tag = "1440"
+                });
+
+            QualityComboBox.Items.Add(
+                new ComboBoxItem
+                {
+                    Content = "1080p",
+                    Tag = "1080"
+                });
+
+            QualityComboBox.Items.Add(
+                new ComboBoxItem
+                {
+                    Content = "720p",
+                    Tag = "720"
+                });
+
+            QualityComboBox.Items.Add(
+                new ComboBoxItem
+                {
+                    Content = "480p",
+                    Tag = "480"
+                });
+
+            QualityComboBox.Items.Add(
+                new ComboBoxItem
+                {
+                    Content = "360p",
+                    Tag = "360"
+                });
+        }
+        else
+        {
+            QualityComboBox.Items.Add(
+                new ComboBoxItem
+                {
+                    Content = "Best quality",
+                    Tag = "0"
+                });
+
+            QualityComboBox.Items.Add(
+                new ComboBoxItem
+                {
+                    Content = "High quality",
+                    Tag = "2"
+                });
+
+            QualityComboBox.Items.Add(
+                new ComboBoxItem
+                {
+                    Content = "Medium quality",
+                    Tag = "5"
+                });
+        }
+
+        QualityComboBox.SelectedIndex = 0;
+    }
+    private void FormatComboBox_SelectionChanged(
+        object sender,
+        SelectionChangedEventArgs e)
+    {
+        if (QualityComboBox == null)
+            return;
+
+        LoadQualityOptions();
+    }
+
 }

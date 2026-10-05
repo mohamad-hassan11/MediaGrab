@@ -21,7 +21,26 @@
             x:Name="DownloadButton"
             Content="Download MP3"
             Height="35"
-            Click="DownloadButton_Click" />
+            Click="DownloadButton_Click"
+            Margin="0,0,0,20" />
+
+            <TextBlock
+            x:Name="StatusTextBlock"
+            Text="Ready"
+            Margin="0,0,0,5" />
+
+            <ProgressBar
+            x:Name="DownloadProgressBar"
+            Height="20"
+            Minimum="0"
+            Maximum="100"
+            Value="0"
+            Margin="0,0,0,5" />
+
+            <TextBlock
+            x:Name="ProgressDetailsTextBlock"
+            Text=""
+            HorizontalAlignment="Right" />
         </StackPanel>
     </Grid>
 </Window>

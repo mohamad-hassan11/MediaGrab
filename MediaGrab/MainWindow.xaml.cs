@@ -1,4 +1,5 @@
-﻿using MediaGrab.Services;
+﻿using MediaGrab.Models;
+using MediaGrab.Services;
 using System.Windows;
 
 namespace MediaGrab;
@@ -14,14 +15,32 @@ public partial class MainWindow : Window
         _downloadService = new DownloadService();
     }
 
-    private async void DownloadButton_Click( object sender, RoutedEventArgs e)
+    private async void DownloadButton_Click(object sender, RoutedEventArgs e)
     {
         try
         {
             DownloadButton.IsEnabled = false;
 
-            await _downloadService.DownloadMp3Async(
-                UrlTextBox.Text);
+            DownloadProgressBar.Value = 0;
+            StatusTextBlock.Text = "Starting...";
+            ProgressDetailsTextBlock.Text = string.Empty;
+
+            var progress = new Progress<DownloadProgress>(p =>
+            {
+                DownloadProgressBar.Value = p.Percentage;
+
+                StatusTextBlock.Text =
+                    $"{p.Status} - {p.Percentage:0.0}%";
+
+                ProgressDetailsTextBlock.Text =
+                    $"{p.Speed} • {p.Eta} remaining";
+            });
+
+            await _downloadService.DownloadMp3Async( UrlTextBox.Text, progress);
+
+            DownloadProgressBar.Value = 100;
+            StatusTextBlock.Text = "Completed";
+            ProgressDetailsTextBlock.Text = string.Empty;
 
             MessageBox.Show(
                 "Download completed!",
@@ -31,6 +50,8 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
+            StatusTextBlock.Text = "Failed";
+
             MessageBox.Show(
                 ex.Message,
                 "Download failed",

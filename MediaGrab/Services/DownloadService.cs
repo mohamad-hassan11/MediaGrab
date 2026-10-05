@@ -1,6 +1,7 @@
 ﻿using MediaGrab.Models;
 using System.Diagnostics;
 using System.IO;
+using System.Security.Policy;
 using System.Text;
 
 namespace MediaGrab.Services;
@@ -27,6 +28,238 @@ public class DownloadService
 
         _ffmpegPath = toolsDirectory;
 
+    }
+
+    public async Task DownloadAsync(
+    DownloadOptions options,
+    IProgress<DownloadProgress>? progress = null)
+    {
+        if (string.IsNullOrWhiteSpace(options.Url))
+        {
+            throw new ArgumentException(
+                "Please enter a media URL.");
+        }
+
+        if (!Uri.TryCreate(
+                options.Url,
+                UriKind.Absolute,
+                out var uri) ||
+            (uri.Scheme != Uri.UriSchemeHttp &&
+             uri.Scheme != Uri.UriSchemeHttps))
+        {
+            throw new ArgumentException(
+                "Please enter a valid URL.");
+        }
+
+        if (string.IsNullOrWhiteSpace(options.OutputDirectory))
+        {
+            throw new ArgumentException(
+                "Please select a download folder.");
+        }
+
+        if (!Directory.Exists(options.OutputDirectory))
+        {
+            throw new DirectoryNotFoundException(
+                "The selected download folder does not exist.");
+        }
+
+        var outputTemplate = Path.Combine(options.OutputDirectory, "%(title)s.%(ext)s");
+
+
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = _ytDlpPath,
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        };
+
+
+        startInfo.ArgumentList.Add("--ffmpeg-location");
+        startInfo.ArgumentList.Add(_ffmpegPath);
+
+        startInfo.ArgumentList.Add("--newline");
+
+        startInfo.ArgumentList.Add("--progress-template");
+        startInfo.ArgumentList.Add(
+            "download:PROGRESS|%(progress._percent_str)s|%(progress._speed_str)s|%(progress._eta_str)s");
+
+        startInfo.ArgumentList.Add("-o");
+        startInfo.ArgumentList.Add(outputTemplate);
+
+        if (options.Format == DownloadFormat.Mp3)
+        {
+            startInfo.ArgumentList.Add("-x");
+
+            startInfo.ArgumentList.Add("--audio-format");
+            startInfo.ArgumentList.Add("mp3");
+
+            startInfo.ArgumentList.Add("--audio-quality");
+            startInfo.ArgumentList.Add(options.Quality);
+
+            startInfo.ArgumentList.Add("--embed-metadata");
+            startInfo.ArgumentList.Add("--embed-thumbnail");
+        }
+        else if (options.Format == DownloadFormat.Video)
+        {
+            startInfo.ArgumentList.Add("-f");
+
+            if (options.Quality == "best")
+            {
+                startInfo.ArgumentList.Add(
+                    "bv*+ba/b");
+            }
+            else
+            {
+                startInfo.ArgumentList.Add(
+                    $"bv*[height<={options.Quality}]+ba/b[height<={options.Quality}]");
+            }
+
+            startInfo.ArgumentList.Add("--merge-output-format");
+            startInfo.ArgumentList.Add("mp4");
+
+            startInfo.ArgumentList.Add("--embed-metadata");
+            startInfo.ArgumentList.Add("--embed-thumbnail");
+        }
+
+
+        startInfo.ArgumentList.Add(options.Url);
+
+        // initilize, track and execute process 
+        var errorOutput = new StringBuilder();
+        using var process = new Process
+        {
+            StartInfo = startInfo
+        };
+
+
+        process.OutputDataReceived += (_, e) =>
+        {
+            if (string.IsNullOrWhiteSpace(e.Data))
+                return;
+
+            var line = e.Data;
+
+            Debug.WriteLine(line);
+
+            // Download progress
+            if (line.StartsWith("PROGRESS|"))
+            {
+                var parts = line.Split('|');
+
+                if (parts.Length < 4)
+                    return;
+
+                var percentageText = parts[1]
+                    .Replace("%", string.Empty)
+                    .Trim();
+
+                if (double.TryParse(
+                        percentageText,
+                        System.Globalization.NumberStyles.Any,
+                        System.Globalization.CultureInfo.InvariantCulture,
+                        out var percentage))
+                {
+                    progress?.Report(new DownloadProgress
+                    {
+                        Percentage = percentage,
+                        Status = "Downloading",
+                        Speed = parts[2].Trim(),
+                        Eta = parts[3].Trim()
+                    });
+                }
+
+                return;
+            }
+
+            // yt-dlp is retrieving information
+            if (line.Contains("[youtube]"))
+            {
+                progress?.Report(new DownloadProgress
+                {
+                    Percentage = 0,
+                    Status = "Fetching media information..."
+                });
+
+                return;
+            }
+
+            // FFmpeg/audio extraction
+            if (line.Contains("[ExtractAudio]"))
+            {
+                progress?.Report(new DownloadProgress
+                {
+                    Percentage = 100,
+                    Status = "Converting to MP3..."
+                });
+
+                return;
+            }
+
+            // Metadata
+            if (line.Contains("[Metadata]"))
+            {
+                progress?.Report(new DownloadProgress
+                {
+                    Percentage = 100,
+                    Status = "Embedding metadata..."
+                });
+
+                return;
+            }
+
+            // Thumbnail processing
+            if (line.Contains("[EmbedThumbnail]"))
+            {
+                progress?.Report(new DownloadProgress
+                {
+                    Percentage = 100,
+                    Status = "Embedding thumbnail..."
+                });
+            }
+
+            if (line.Contains("[Merger]"))
+            {
+                progress?.Report(new DownloadProgress
+                {
+                    Percentage = 100,
+                    Status = "Merging video and audio..."
+                });
+
+                return;
+            }
+        };
+
+        process.ErrorDataReceived += (_, e) =>
+        {
+            if (string.IsNullOrWhiteSpace(e.Data))
+                return;
+
+            Debug.WriteLine(e.Data);
+            errorOutput.AppendLine(e.Data);
+        };
+
+
+        process.Start();
+
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+
+        await process.WaitForExitAsync();
+
+        if (process.ExitCode != 0)
+        {
+            var errorMessage = errorOutput.ToString().Trim();
+
+            if (string.IsNullOrWhiteSpace(errorMessage))
+            {
+                errorMessage =
+                    $"The download failed with exit code {process.ExitCode}.";
+            }
+
+            throw new InvalidOperationException(errorMessage);
+        }
     }
 
 

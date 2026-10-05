@@ -45,6 +45,8 @@ public partial class MainWindow : Window
             DownloadButton.IsEnabled = false;
             BrowseButton.IsEnabled = false;
             UrlTextBox.IsEnabled = false;
+            FormatComboBox.IsEnabled = false;
+            QualityComboBox.IsEnabled = false;
 
             DownloadProgressBar.Value = 0;
             StatusTextBlock.Text = "Starting...";
@@ -69,14 +71,46 @@ public partial class MainWindow : Window
                 }
             });
 
-            await _downloadService.DownloadMp3Async(UrlTextBox.Text, OutputFolderTextBox.Text, progress);
+
+            var selectedFormat =
+                (FormatComboBox.SelectedItem as ComboBoxItem)?
+                .Tag?
+                .ToString();
+
+            var selectedQuality =
+                (QualityComboBox.SelectedItem as ComboBoxItem)?
+                .Tag?
+                .ToString();
+
+            if (selectedFormat == null || selectedQuality == null)
+                throw new InvalidOperationException("Please select a format and quality.");
+
+            var options = new DownloadOptions
+            {
+                Url = UrlTextBox.Text,
+                OutputDirectory = OutputFolderTextBox.Text,
+
+                Format = selectedFormat == "video"
+                    ? DownloadFormat.Video
+                    : DownloadFormat.Mp3,
+
+                Quality = selectedQuality
+            };
+
+            await _downloadService.DownloadAsync(options, progress);
+            //await _downloadService.DownloadMp3Async(UrlTextBox.Text, OutputFolderTextBox.Text, progress);
 
             DownloadProgressBar.Value = 100;
             StatusTextBlock.Text = "Completed";
             ProgressDetailsTextBlock.Text = string.Empty;
 
+            var typeName =
+                options.Format == DownloadFormat.Mp3
+                    ? "Audio"
+                    : "Video";
+
             MessageBox.Show(
-                "Download completed!",
+                $"{typeName} downloaded successfully!",
                 "MediaGrab",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
@@ -96,6 +130,8 @@ public partial class MainWindow : Window
             DownloadButton.IsEnabled = true;
             BrowseButton.IsEnabled = true;
             UrlTextBox.IsEnabled = true;
+            FormatComboBox.IsEnabled = true;
+            QualityComboBox.IsEnabled = true;
         }
     }
 
@@ -106,7 +142,7 @@ public partial class MainWindow : Window
 
         if (!Directory.Exists(folder))
             return;
-
+      
         Process.Start(new ProcessStartInfo
         {
             FileName = folder,

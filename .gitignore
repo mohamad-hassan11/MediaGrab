@@ -9,3 +9,10 @@
 /MediaGrab/Tools/ffprobe.exe
 /MediaGrab/Tools/deno.exe
 /MediaGrab/bin/Release/net10.0-windows
+desktop/MediaGrab/Tools/deno.exe
+desktop/MediaGrab/Tools/ffmpeg.exe
+desktop/MediaGrab/Tools/ffprobe.exe
+desktop/MediaGrab/Tools/yt-dlp.exe
+desktop/MediaGrab/bin
+desktop/MediaGrab/obj
+desktop/.vs

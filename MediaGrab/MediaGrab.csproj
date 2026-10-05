@@ -9,12 +9,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Tools\deno.exe" />
     <None Remove="Tools\ffmpeg.exe" />
     <None Remove="Tools\ffprobe.exe" />
     <None Remove="Tools\yt-dlp.exe" />
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="Tools\deno.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Tools\ffmpeg.exe">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

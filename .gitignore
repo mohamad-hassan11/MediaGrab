@@ -7,3 +7,4 @@
 /MediaGrab/obj
 /MediaGrab/Tools/ffmpeg.exe
 /MediaGrab/Tools/ffprobe.exe
+/MediaGrab/Tools/deno.exe

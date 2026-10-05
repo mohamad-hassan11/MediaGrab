@@ -29,14 +29,22 @@ public partial class MainWindow : Window
             {
                 DownloadProgressBar.Value = p.Percentage;
 
-                StatusTextBlock.Text =
-                    $"{p.Status} - {p.Percentage:0.0}%";
+                if (p.Status == "Downloading")
+                {
+                    StatusTextBlock.Text =
+                        $"Downloading - {p.Percentage:0.0}%";
 
-                ProgressDetailsTextBlock.Text =
-                    $"{p.Speed} • {p.Eta} remaining";
+                    ProgressDetailsTextBlock.Text =
+                        $"{p.Speed} • {p.Eta} remaining";
+                }
+                else
+                {
+                    StatusTextBlock.Text = p.Status;
+                    ProgressDetailsTextBlock.Text = string.Empty;
+                }
             });
 
-            await _downloadService.DownloadMp3Async( UrlTextBox.Text, progress);
+            await _downloadService.DownloadMp3Async(UrlTextBox.Text, progress);
 
             DownloadProgressBar.Value = 100;
             StatusTextBlock.Text = "Completed";

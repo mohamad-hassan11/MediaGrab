@@ -1,0 +1,9 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs
+/MediaGrab/bin/Debug/net10.0-windows
+/MediaGrab/obj
+/MediaGrab/Tools/ffmpeg.exe
+/MediaGrab/Tools/ffprobe.exe

@@ -6,7 +6,22 @@
         xmlns:local="clr-namespace:MediaGrab"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
-    <Grid>
+    <Grid Margin="20">
+        <StackPanel>
+            <TextBlock
+            Text="YouTube URL"
+            Margin="0,0,0,5" />
 
+            <TextBox
+            x:Name="UrlTextBox"
+            Height="30"
+            Margin="0,0,0,10" />
+
+            <Button
+            x:Name="DownloadButton"
+            Content="Download MP3"
+            Height="35"
+            Click="DownloadButton_Click" />
+        </StackPanel>
     </Grid>
 </Window>

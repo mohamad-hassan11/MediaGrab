@@ -1,24 +1,45 @@
-﻿using System.Text;
+﻿using MediaGrab.Services;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
-namespace MediaGrab
+namespace MediaGrab;
+
+public partial class MainWindow : Window
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
-    public partial class MainWindow : Window
+    private readonly DownloadService _downloadService;
+
+    public MainWindow()
     {
-        public MainWindow()
+        InitializeComponent();
+
+        _downloadService = new DownloadService();
+    }
+
+    private async void DownloadButton_Click( object sender, RoutedEventArgs e)
+    {
+        try
         {
-            InitializeComponent();
+            DownloadButton.IsEnabled = false;
+
+            await _downloadService.DownloadMp3Async(
+                UrlTextBox.Text);
+
+            MessageBox.Show(
+                "Download completed!",
+                "MediaGrab",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                ex.Message,
+                "Download failed",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        finally
+        {
+            DownloadButton.IsEnabled = true;
         }
     }
 }

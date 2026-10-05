@@ -30,13 +30,11 @@ public class DownloadService
     }
 
 
-    public async Task DownloadMp3Async(
-        string url,
-        IProgress<DownloadProgress>? progress = null)
+    public async Task DownloadMp3Async(string url, string outputDirectory, IProgress<DownloadProgress>? progress = null)
     {
         if (string.IsNullOrWhiteSpace(url))
             throw new ArgumentException("URL cannot be empty.");
-        
+
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
             throw new ArgumentException("Please enter a valid URL.");
 
@@ -55,9 +53,21 @@ public class DownloadService
                 _denoPath);
         }
 
+        if (string.IsNullOrWhiteSpace(outputDirectory))
+        {
+            throw new ArgumentException(
+                "Please select a download folder.");
+        }
 
-        var downloadsDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
-        var outputTemplate = Path.Combine( downloadsDirectory, "%(title)s.%(ext)s");
+        if (!Directory.Exists(outputDirectory))
+        {
+            throw new DirectoryNotFoundException(
+                "The selected download folder does not exist.");
+        }
+
+        var outputTemplate = Path.Combine(outputDirectory, "%(title)s.%(ext)s");
+
+
 
         var startInfo = new ProcessStartInfo
         {

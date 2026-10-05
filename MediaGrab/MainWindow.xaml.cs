@@ -1,5 +1,8 @@
 ﻿using MediaGrab.Models;
 using MediaGrab.Services;
+using Microsoft.Win32;
+using System.Diagnostics;
+using System.IO;
 using System.Windows;
 
 namespace MediaGrab;
@@ -13,6 +16,22 @@ public partial class MainWindow : Window
         InitializeComponent();
 
         _downloadService = new DownloadService();
+
+        OutputFolderTextBox.Text = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),"Downloads");
+    }
+
+    private void BrowseButton_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFolderDialog
+        {
+            Title = "Select download folder",
+            InitialDirectory = OutputFolderTextBox.Text
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            OutputFolderTextBox.Text = dialog.FolderName;
+        }
     }
 
     private async void DownloadButton_Click(object sender, RoutedEventArgs e)
@@ -20,6 +39,8 @@ public partial class MainWindow : Window
         try
         {
             DownloadButton.IsEnabled = false;
+            BrowseButton.IsEnabled = false;
+            UrlTextBox.IsEnabled = false;
 
             DownloadProgressBar.Value = 0;
             StatusTextBlock.Text = "Starting...";
@@ -44,7 +65,7 @@ public partial class MainWindow : Window
                 }
             });
 
-            await _downloadService.DownloadMp3Async(UrlTextBox.Text, progress);
+            await _downloadService.DownloadMp3Async(UrlTextBox.Text, OutputFolderTextBox.Text, progress);
 
             DownloadProgressBar.Value = 100;
             StatusTextBlock.Text = "Completed";
@@ -69,6 +90,23 @@ public partial class MainWindow : Window
         finally
         {
             DownloadButton.IsEnabled = true;
+            BrowseButton.IsEnabled = true;
+            UrlTextBox.IsEnabled = true;
         }
+    }
+
+
+    private void OpenFolderButton_Click(object sender, RoutedEventArgs e)
+    {
+        var folder = OutputFolderTextBox.Text;
+
+        if (!Directory.Exists(folder))
+            return;
+
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = folder,
+            UseShellExecute = true
+        });
     }
 }

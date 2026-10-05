@@ -8,8 +8,9 @@
         Title="MainWindow" Height="450" Width="800">
     <Grid Margin="20">
         <StackPanel>
+
             <TextBlock
-            Text="YouTube URL"
+            Text="Media URL"
             Margin="0,0,0,5" />
 
             <TextBox
@@ -17,11 +18,44 @@
             Height="30"
             Margin="0,0,0,10" />
 
+            <TextBlock
+            Text="Save to"
+            Margin="0,5,0,5" />
+
+            <Grid Margin="0,0,0,15">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBox
+                x:Name="OutputFolderTextBox"
+                Grid.Column="0"
+                Height="30"
+                IsReadOnly="True"
+                VerticalContentAlignment="Center"
+                Margin="0,0,10,0" />
+
+                <Button
+                Grid.Column="1"
+                x:Name="BrowseButton"
+                Content="Browse..."
+                Width="90"
+                Height="30"
+                Click="BrowseButton_Click" />
+            </Grid>
+
             <Button
             x:Name="DownloadButton"
             Content="Download MP3"
             Height="35"
             Click="DownloadButton_Click"
+            Margin="0,0,0,20" />
+            <Button
+            x:Name="OpenFolderButton"
+            Content="Open Download Folder"
+            Height="30"
+            Click="OpenFolderButton_Click"
             Margin="0,0,0,20" />
 
             <TextBlock
@@ -39,8 +73,8 @@
 
             <TextBlock
             x:Name="ProgressDetailsTextBlock"
-            Text=""
             HorizontalAlignment="Right" />
+
         </StackPanel>
     </Grid>
 </Window>

@@ -1,3 +1,4 @@
+import os
 import shutil
 from pathlib import Path
 from uuid import uuid4
@@ -20,10 +21,20 @@ app = FastAPI(
     version="0.1.0"
 )
 
+# ALLOWED_ORIGINS is a comma-separated list of extra origins to allow
+# alongside the defaults below (e.g. a staging/preview deployment domain).
+_extra_origins = [
+    origin.strip()
+    for origin in os.environ.get("ALLOWED_ORIGINS", "").split(",")
+    if origin.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
+        "https://media-grab-sigma.vercel.app",
+        *_extra_origins,
     ],
     allow_credentials=False,
     allow_methods=["*"],

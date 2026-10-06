@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
 type DownloadType = "audio" | "video";
 type JobStatus = {
   job_id: string;
@@ -79,7 +82,7 @@ export default function Home() {
 
   async function downloadResult(jobId: string) {
     const response = await fetch(
-      `http://localhost:8000/api/jobs/${jobId}/file`,
+      `${API_BASE_URL}/api/jobs/${jobId}/file`,
     );
 
     if (!response.ok) {
@@ -112,7 +115,7 @@ export default function Home() {
 
   async function monitorJob(jobId: string) {
     while (true) {
-      const response = await fetch(`http://localhost:8000/api/jobs/${jobId}`);
+      const response = await fetch(`${API_BASE_URL}/api/jobs/${jobId}`);
 
       if (!response.ok) {
         throw new Error("Unable to retrieve download status.");
@@ -175,7 +178,7 @@ export default function Home() {
 
       setStatus("Preparing download...");
 
-      const response = await fetch("http://localhost:8000/api/jobs", {
+      const response = await fetch(`${API_BASE_URL}/api/jobs`, {
         method: "POST",
 
         headers: {

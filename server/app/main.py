@@ -1,13 +1,19 @@
+import shutil
 from pathlib import Path
+from uuid import uuid4
 
+import uvicorn
 from fastapi import BackgroundTasks, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-    
-from .downloader import download_media
-from .models import DownloadRequest
-import uvicorn
 
+from .downloader import TEMP_DIR, download_media
+from .jobs import create_job, delete_job, get_job, update_job
+from .models import (
+    CreateJobResponse,
+    DownloadRequest,
+    JobStatusResponse,
+)
 
 app = FastAPI(
     title="MediaGrab API",
@@ -20,12 +26,10 @@ app.add_middleware(
         "http://localhost:3000",
     ],
     allow_credentials=False,
-    allow_methods=["POST"],
+    allow_methods=["*"],
     allow_headers=["Content-Type"],
     expose_headers=["Content-Disposition"],
 )
-
-
 
 
 
@@ -36,37 +40,101 @@ def health():
     }
 
 
-@app.post("/api/download")
-def download(
+@app.post(
+    "/api/jobs",
+    response_model=CreateJobResponse
+)
+def start_download(
     request: DownloadRequest,
     background_tasks: BackgroundTasks
 ):
-    try:
-        file_path = download_media(
-            str(request.url),
-            request.download_type,
-            request.quality
-        )
+    job_id = uuid4().hex
 
-        background_tasks.add_task(
-            delete_directory,
-            file_path.parent
-        )
+    create_job(job_id)
 
-        return FileResponse(
-            path=file_path,
-            filename=file_path.name,
-            media_type="application/octet-stream"
-        )
+    background_tasks.add_task(
+        process_download,
+        job_id,
+        request,
+    )
 
-    except Exception as exc:
+    return CreateJobResponse(
+        job_id=job_id
+    )
+
+
+@app.get(
+    "/api/jobs/{job_id}",
+    response_model=JobStatusResponse
+)
+def job_status(
+    job_id: str
+):
+    job = get_job(job_id)
+
+    if job is None:
         raise HTTPException(
-            status_code=500,
-            detail=str(exc)
-        ) from exc
+            status_code=404,
+            detail="Job not found."
+        )
+
+    return JobStatusResponse(
+        job_id=job.job_id,
+        status=job.status,
+        progress=job.progress,
+        speed=job.speed,
+        eta=job.eta,
+        error=job.error,
+    )
 
 
-import shutil
+@app.get(
+    "/api/jobs/{job_id}/file"
+)
+def download_file(
+    job_id: str,
+    background_tasks: BackgroundTasks
+):
+    job = get_job(job_id)
+
+    if job is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Job not found."
+        )
+
+    if job.status != "completed":
+        raise HTTPException(
+            status_code=409,
+            detail="The download is not completed."
+        )
+
+    if (
+        job.file_path is None
+        or not job.file_path.exists()
+    ):
+        raise HTTPException(
+            status_code=404,
+            detail="Download file not found."
+        )
+
+    file_path = job.file_path
+
+    background_tasks.add_task(
+        delete_directory,
+        file_path.parent
+    )
+    background_tasks.add_task(
+        delete_job,
+        job_id
+    )
+
+    return FileResponse(
+        path=file_path,
+        filename=file_path.name,
+        media_type="application/octet-stream",
+    )
+
 
 def delete_directory(
     directory: Path
@@ -80,6 +148,40 @@ def delete_directory(
         pass
 
 
+def process_download(
+    job_id: str,
+    request: DownloadRequest
+) -> None:
+
+    try:
+        file_path = download_media(
+            job_id,
+            str(request.url),
+            request.download_type,
+            request.quality,
+        )
+
+        update_job(
+            job_id,
+            status="completed",
+            progress=100,
+            speed=None,
+            eta=None,
+            file_path=file_path,
+        )
+
+    except Exception as exc:
+        update_job(
+            job_id,
+            status="failed",
+            error=str(exc),
+            speed=None,
+            eta=None,
+        )
+
+        # Clean up any partial files left behind by the failed download,
+        # since no /file request will ever arrive to trigger cleanup.
+        delete_directory(TEMP_DIR / job_id)
 
 
 if __name__ == "__main__":

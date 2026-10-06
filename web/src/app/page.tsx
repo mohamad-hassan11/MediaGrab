@@ -3,7 +3,19 @@
 import { useState } from "react";
 
 type DownloadType = "audio" | "video";
+type JobStatus = {
+  job_id: string;
 
+  status: "queued" | "downloading" | "processing" | "completed" | "failed";
+
+  progress: number;
+
+  speed: string | null;
+
+  eta: string | null;
+
+  error: string | null;
+};
 export default function Home() {
   const [url, setUrl] = useState("");
   const [downloadType, setDownloadType] = useState<DownloadType>("audio");
@@ -15,6 +27,11 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
 
   const [quality, setQuality] = useState("best");
+  const [progress, setProgress] = useState(0);
+
+  const [speed, setSpeed] = useState<string | null>(null);
+
+  const [eta, setEta] = useState<string | null>(null);
 
   const audioQualities = [
     { value: "best", label: "Best quality" },
@@ -60,6 +77,85 @@ export default function Home() {
     setQuality("best");
   }
 
+  async function downloadResult(jobId: string) {
+    const response = await fetch(
+      `http://localhost:8000/api/jobs/${jobId}/file`,
+    );
+
+    if (!response.ok) {
+      throw new Error("Unable to retrieve the completed file.");
+    }
+
+    const filename = getFilenameFromResponse(
+      response,
+      downloadType === "audio" ? "download.mp3" : "download.mp4",
+    );
+
+    const blob = await response.blob();
+
+    const objectUrl = window.URL.createObjectURL(blob);
+
+    const anchor = document.createElement("a");
+
+    anchor.href = objectUrl;
+
+    anchor.download = filename;
+
+    document.body.appendChild(anchor);
+
+    anchor.click();
+
+    anchor.remove();
+
+    window.URL.revokeObjectURL(objectUrl);
+  }
+
+  async function monitorJob(jobId: string) {
+    while (true) {
+      const response = await fetch(`http://localhost:8000/api/jobs/${jobId}`);
+
+      if (!response.ok) {
+        throw new Error("Unable to retrieve download status.");
+      }
+
+      const job: JobStatus = await response.json();
+
+      setProgress(job.progress);
+
+      setSpeed(job.speed);
+
+      setEta(job.eta);
+
+      if (job.status === "downloading") {
+        setStatus("Downloading...");
+      }
+
+      if (job.status === "processing") {
+        setStatus("Processing media...");
+      }
+
+      if (job.status === "failed") {
+        throw new Error(job.error || "The download failed.");
+      }
+
+      if (job.status === "completed") {
+        setStatus("Downloading file...");
+
+        await downloadResult(jobId);
+
+        setProgress(100);
+
+        setStatus("Completed");
+
+        setIsDownloading(false);
+
+        return;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+  }
+
   async function handleDownload() {
     if (!url.trim()) {
       setError("Please enter a media URL.");
@@ -68,10 +164,18 @@ export default function Home() {
 
     try {
       setError(null);
+
       setIsDownloading(true);
+
+      setProgress(0);
+
+      setSpeed(null);
+
+      setEta(null);
+
       setStatus("Preparing download...");
 
-      const response = await fetch("http://localhost:8000/api/download", {
+      const response = await fetch("http://localhost:8000/api/jobs", {
         method: "POST",
 
         headers: {
@@ -86,37 +190,12 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        const data = await response.json();
-
-        throw new Error(data.detail || "The download failed.");
+        throw new Error("Unable to start download.");
       }
 
-      setStatus("Receiving file...");
+      const data = await response.json();
 
-      const filename = getFilenameFromResponse(
-        response,
-        downloadType === "audio" ? "download.mp3" : "download.mp4",
-      );
-
-      const blob = await response.blob();
-
-      const objectUrl = window.URL.createObjectURL(blob);
-
-      const anchor = document.createElement("a");
-
-      anchor.href = objectUrl;
-      debugger;
-      anchor.download = filename;
-
-      document.body.appendChild(anchor);
-
-      anchor.click();
-
-      anchor.remove();
-
-      window.URL.revokeObjectURL(objectUrl);
-
-      setStatus("Completed");
+      await monitorJob(data.job_id);
     } catch (err) {
       setStatus("Failed");
 
@@ -125,7 +204,7 @@ export default function Home() {
       } else {
         setError("An unexpected error occurred.");
       }
-    } finally {
+
       setIsDownloading(false);
     }
   }
@@ -233,15 +312,27 @@ export default function Home() {
 
             <div>
               <div className="mb-2 flex items-center justify-between text-sm">
-                <span className="text-slate-700"> {status}</span>
+                <span className="text-slate-700">{status}</span>
+
+                <span className="text-slate-500">{progress.toFixed(0)}%</span>
               </div>
 
               <div className="h-2 overflow-hidden rounded-full bg-slate-100">
                 <div
-                  className="h-full rounded-full bg-blue-600 transition-all"
-                  style={{ width: isDownloading ? "50%" : "0%" }}
+                  className="h-full rounded-full bg-blue-600 transition-all duration-300"
+                  style={{
+                    width: `${Math.min(progress, 100)}%`,
+                  }}
                 />
               </div>
+
+              {isDownloading && (speed || eta) && (
+                <div className="mt-2 flex justify-end gap-3 text-xs text-slate-500">
+                  {speed && <span>{speed}</span>}
+
+                  {eta && <span>{eta} remaining</span>}
+                </div>
+              )}
             </div>
           </div>
         </div>

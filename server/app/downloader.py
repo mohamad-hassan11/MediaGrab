@@ -1,5 +1,6 @@
 from pathlib import Path
 from .jobs import update_job
+import os
 import yt_dlp
 import shutil
 from pathlib import Path
@@ -24,6 +25,65 @@ if not FFMPEG_PATH:
     raise RuntimeError(
         "FFmpeg could not be found."
     )
+
+# YouTube may reject requests from datacenter IPs (e.g. cloud hosting
+# providers like Render) with "Sign in to confirm you're not a bot".
+# Primary fix: the bgutil-ytdlp-pot-provider plugin, which fetches a
+# proof-of-origin token from a local HTTP server (started alongside this
+# app, see entrypoint.sh) without requiring any logged-in cookies.
+# https://github.com/Brainicism/bgutil-ytdlp-pot-provider
+# https://github.com/yt-dlp/yt-dlp/wiki/PO-Token-Guide
+#
+# - BGUTIL_POT_BASE_URL: override the PO Token provider server's URL.
+#   Only needed if it isn't reachable at the plugin's default of
+#   http://127.0.0.1:4416 (e.g. a different port or a separate host).
+# - YTDLP_PLAYER_CLIENTS: comma-separated list of YouTube player clients
+#   to try (e.g. "mweb,tv,web_safari"). Some clients need a PO token less
+#   often than others; use this if tokens are generated but the "Sign in
+#   to confirm you're not a bot" error still occurs for the default client.
+POT_BASE_URL = os.environ.get("BGUTIL_POT_BASE_URL")
+
+PLAYER_CLIENTS = os.environ.get("YTDLP_PLAYER_CLIENTS")
+
+
+def apply_pot_options(options: dict) -> None:
+    extractor_args = options.setdefault("extractor_args", {})
+
+    if POT_BASE_URL:
+        extractor_args.setdefault("youtubepot-bgutilhttp", {})[
+            "base_url"
+        ] = [POT_BASE_URL]
+
+    if PLAYER_CLIENTS:
+        clients = [
+            client.strip()
+            for client in PLAYER_CLIENTS.split(",")
+            if client.strip()
+        ]
+
+        if clients:
+            extractor_args.setdefault("youtube", {})[
+                "player_client"
+            ] = clients
+
+
+# Optional, supplementary fallback: cookies from a logged-in session.
+# Not used unless YTDLP_COOKIES_FILE/YTDLP_COOKIES_FROM_BROWSER is set,
+# since a PO token alone does not bypass IP-based bot checks in all
+# cases. See https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+COOKIES_FILE = os.environ.get("YTDLP_COOKIES_FILE")
+
+COOKIES_FROM_BROWSER = os.environ.get(
+    "YTDLP_COOKIES_FROM_BROWSER"
+)
+
+
+def apply_cookie_options(options: dict) -> None:
+    if COOKIES_FROM_BROWSER:
+        options["cookiesfrombrowser"] = (COOKIES_FROM_BROWSER,)
+    elif COOKIES_FILE and Path(COOKIES_FILE).is_file():
+        options["cookiefile"] = COOKIES_FILE
+
 
 def download_media(
     job_id: str,
@@ -57,6 +117,9 @@ def download_media(
         )
     ],
 }
+
+    apply_pot_options(options)
+    apply_cookie_options(options)
 
     if download_type == "audio":
         configure_audio(

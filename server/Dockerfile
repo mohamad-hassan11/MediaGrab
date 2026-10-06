@@ -14,7 +14,9 @@ RUN apt-get update && apt-get install -y \
 
 COPY requirements.txt .
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip install --no-cache-dir --pre --upgrade "yt-dlp[default]" \
+    && python -c "import yt_dlp; print(f'yt-dlp version: {yt_dlp.version.__version__}')"
 
 COPY app ./app
 

@@ -1,16 +1,29 @@
 from pathlib import Path
-
 from .jobs import update_job
 import yt_dlp
+import shutil
+from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-FFMPEG_PATH = BASE_DIR / "tools"
+LOCAL_FFMPEG = BASE_DIR / "tools"
 
+if (
+    (LOCAL_FFMPEG / "ffmpeg.exe").exists()
+):
+    FFMPEG_PATH = str(LOCAL_FFMPEG)
+else:
+    FFMPEG_PATH = shutil.which(
+        "ffmpeg"
+    )
 TEMP_DIR = BASE_DIR / "temp"
 
 TEMP_DIR.mkdir(exist_ok=True)
 
+if not FFMPEG_PATH:
+    raise RuntimeError(
+        "FFmpeg could not be found."
+    )
 
 def download_media(
     job_id: str,
@@ -18,6 +31,8 @@ def download_media(
     download_type: str,
     quality: str
 ) -> Path:
+
+
 
     job_directory = TEMP_DIR / job_id
     job_directory.mkdir(parents=True, exist_ok=True)
@@ -30,7 +45,7 @@ def download_media(
     "outtmpl": output_template,
 
     "ffmpeg_location":
-        str(FFMPEG_PATH),
+        FFMPEG_PATH,
 
     "noplaylist": True,
 

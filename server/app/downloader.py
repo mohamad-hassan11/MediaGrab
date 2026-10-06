@@ -314,22 +314,11 @@ def format_eta(
 
 def get_cookie_file() -> str | None:
 
-    configured_cookie_file = os.environ.get("YTDLP_COOKIES_FILE")
-    if configured_cookie_file:
-        cookie_file = COOKIES_FILE
-        if not cookie_file.is_file():
-            raise FileNotFoundError(
-                f"YTDLP_COOKIES_FILE does not point to a readable file: {cookie_file}"
-            )
-    elif COOKIES_FILE.is_file():
-        cookie_file = COOKIES_FILE
-    elif RENDER_COOKIE_FILE.is_file():
-        cookie_file = RENDER_COOKIE_FILE
-    else:
+    if not RENDER_COOKIE_FILE.exists():
         return None
 
     shutil.copyfile(
-        cookie_file,
+        RENDER_COOKIE_FILE,
         WRITABLE_COOKIE_FILE
     )
 

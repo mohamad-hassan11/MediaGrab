@@ -43,6 +43,11 @@ RENDER_COOKIE_FILE = Path(
     "/etc/secrets/cookies.txt"
 )
 
+WRITABLE_COOKIE_FILE = Path(
+    "/tmp/mediagrab-cookies.txt"
+)
+
+
 
 def apply_cookie_options(options: dict) -> None:
     if COOKIES_FROM_BROWSER:
@@ -317,15 +322,17 @@ def format_eta(
 
 def get_cookie_file() -> str | None:
 
+    if not RENDER_COOKIE_FILE.exists():
+        return None
 
-    if RENDER_COOKIE_FILE.exists():
-        return str(
-            RENDER_COOKIE_FILE
-        )
+    shutil.copyfile(
+        RENDER_COOKIE_FILE,
+        WRITABLE_COOKIE_FILE
+    )
 
-    if COOKIES_FILE.exists():
-        return str(
-            COOKIES_FILE
-        )
+    WRITABLE_COOKIE_FILE.chmod(0o600)
 
-    return None
+    return str(
+        WRITABLE_COOKIE_FILE
+    )
+

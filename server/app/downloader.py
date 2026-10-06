@@ -35,9 +35,7 @@ COOKIES_FILE = Path(os.environ.get(
     str(BASE_DIR / "cookies.txt"),
 )
 )
-COOKIES_FROM_BROWSER = os.environ.get(
-    "YTDLP_COOKIES_FROM_BROWSER"
-)
+
 
 RENDER_COOKIE_FILE = Path(
     "/etc/secrets/cookies.txt"
@@ -49,11 +47,7 @@ WRITABLE_COOKIE_FILE = Path(
 
 
 
-def apply_cookie_options(options: dict) -> None:
-    if COOKIES_FROM_BROWSER:
-        options["cookiesfrombrowser"] = (COOKIES_FROM_BROWSER,)
-    elif Path(COOKIES_FILE).is_file():
-        options["cookiefile"] = COOKIES_FILE
+
 
 
 def download_media(
@@ -93,7 +87,6 @@ def download_media(
     if JS_RUNTIMES:
         options["js_runtimes"] = JS_RUNTIMES
 
-    apply_cookie_options(options)
 
     if download_type == "audio":
         configure_audio(
@@ -136,7 +129,6 @@ def download_media(
         )
 
     return files[0]
-
 
 
 def configure_video(

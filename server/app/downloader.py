@@ -26,62 +26,43 @@ if not FFMPEG_PATH:
         "FFmpeg could not be found."
     )
 
+# yt-dlp needs an external JS runtime (plus the yt-dlp-ejs scripts, see
+# requirements.txt) to solve YouTube's JS challenges. Deno is yt-dlp's
+# default runtime, but we don't install it; Node is already available in
+# the container, so enable it explicitly. Without this, "JS runtimes:
+# none" leaves YouTube unable to verify the client, which contributes to
+# bot/sign-in check failures. https://github.com/yt-dlp/yt-dlp/wiki/EJS
+JS_RUNTIMES = {"node": {}} if shutil.which("node") else None
+
 # YouTube may reject requests from datacenter IPs (e.g. cloud hosting
 # providers like Render) with "Sign in to confirm you're not a bot".
-# Primary fix: the bgutil-ytdlp-pot-provider plugin, which fetches a
-# proof-of-origin token from a local HTTP server (started alongside this
-# app, see entrypoint.sh) without requiring any logged-in cookies.
-# https://github.com/Brainicism/bgutil-ytdlp-pot-provider
-# https://github.com/yt-dlp/yt-dlp/wiki/PO-Token-Guide
+# The documented fix is to pass cookies from a logged-in session. See:
+# https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
 #
-# - BGUTIL_POT_BASE_URL: override the PO Token provider server's URL.
-#   Only needed if it isn't reachable at the plugin's default of
-#   http://127.0.0.1:4416 (e.g. a different port or a separate host).
-# - YTDLP_PLAYER_CLIENTS: comma-separated list of YouTube player clients
-#   to try (e.g. "mweb,tv,web_safari"). Some clients need a PO token less
-#   often than others; use this if tokens are generated but the "Sign in
-#   to confirm you're not a bot" error still occurs for the default client.
-POT_BASE_URL = os.environ.get("BGUTIL_POT_BASE_URL")
-
-PLAYER_CLIENTS = os.environ.get("YTDLP_PLAYER_CLIENTS")
-
-
-def apply_pot_options(options: dict) -> None:
-    extractor_args = options.setdefault("extractor_args", {})
-
-    if POT_BASE_URL:
-        extractor_args.setdefault("youtubepot-bgutilhttp", {})[
-            "base_url"
-        ] = [POT_BASE_URL]
-
-    if PLAYER_CLIENTS:
-        clients = [
-            client.strip()
-            for client in PLAYER_CLIENTS.split(",")
-            if client.strip()
-        ]
-
-        if clients:
-            extractor_args.setdefault("youtube", {})[
-                "player_client"
-            ] = clients
-
-
-# Optional, supplementary fallback: cookies from a logged-in session.
-# Not used unless YTDLP_COOKIES_FILE/YTDLP_COOKIES_FROM_BROWSER is set,
-# since a PO token alone does not bypass IP-based bot checks in all
-# cases. See https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
-COOKIES_FILE = os.environ.get("YTDLP_COOKIES_FILE")
+# - YTDLP_COOKIES_FILE: path to a Netscape-format cookies.txt file.
+#   Defaults to "<server>/cookies.txt" if present.
+# - YTDLP_COOKIES_FROM_BROWSER: a browser name (e.g. "chrome", "firefox")
+#   to read cookies directly from, for local/dev use where a browser is
+#   installed on the same machine as the server.
+COOKIES_FILE = os.environ.get(
+    "YTDLP_COOKIES_FILE",
+    str(BASE_DIR / "cookies.txt"),
+)
 
 COOKIES_FROM_BROWSER = os.environ.get(
     "YTDLP_COOKIES_FROM_BROWSER"
 )
 
 
+RENDER_COOKIE_FILE = Path(
+    "/etc/secrets/cookies.txt"
+)
+
+
 def apply_cookie_options(options: dict) -> None:
     if COOKIES_FROM_BROWSER:
         options["cookiesfrombrowser"] = (COOKIES_FROM_BROWSER,)
-    elif COOKIES_FILE and Path(COOKIES_FILE).is_file():
+    elif Path(COOKIES_FILE).is_file():
         options["cookiefile"] = COOKIES_FILE
 
 
@@ -101,6 +82,11 @@ def download_media(
         job_directory / "%(title)s.%(ext)s"
     )
 
+    cookie_file = get_cookie_file()
+
+    if cookie_file:
+        options["cookiefile"] = cookie_file
+
     options = {
     "outtmpl": output_template,
 
@@ -118,7 +104,9 @@ def download_media(
     ],
 }
 
-    apply_pot_options(options)
+    if JS_RUNTIMES:
+        options["js_runtimes"] = JS_RUNTIMES
+
     apply_cookie_options(options)
 
     if download_type == "audio":
@@ -344,3 +332,29 @@ def format_eta(
         f"{minutes:02d}:"
         f"{seconds:02d}"
     )
+
+
+def get_cookie_file() -> str | None:
+    configured_path = os.getenv(
+        "YTDLP_COOKIE_FILE"
+    )
+
+    if configured_path:
+        path = Path(
+            configured_path
+        )
+
+        if path.exists():
+            return str(path)
+
+    if RENDER_COOKIE_FILE.exists():
+        return str(
+            RENDER_COOKIE_FILE
+        )
+
+    if COOKIES_FILE.exists():
+        return str(
+            COOKIES_FILE
+        )
+
+    return None

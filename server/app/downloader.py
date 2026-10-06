@@ -26,33 +26,18 @@ if not FFMPEG_PATH:
         "FFmpeg could not be found."
     )
 
-# yt-dlp needs an external JS runtime (plus the yt-dlp-ejs scripts, see
-# requirements.txt) to solve YouTube's JS challenges. Deno is yt-dlp's
-# default runtime, but we don't install it; Node is already available in
-# the container, so enable it explicitly. Without this, "JS runtimes:
-# none" leaves YouTube unable to verify the client, which contributes to
-# bot/sign-in check failures. https://github.com/yt-dlp/yt-dlp/wiki/EJS
+
 JS_RUNTIMES = {"node": {}} if shutil.which("node") else None
 
-# YouTube may reject requests from datacenter IPs (e.g. cloud hosting
-# providers like Render) with "Sign in to confirm you're not a bot".
-# The documented fix is to pass cookies from a logged-in session. See:
-# https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
-#
-# - YTDLP_COOKIES_FILE: path to a Netscape-format cookies.txt file.
-#   Defaults to "<server>/cookies.txt" if present.
-# - YTDLP_COOKIES_FROM_BROWSER: a browser name (e.g. "chrome", "firefox")
-#   to read cookies directly from, for local/dev use where a browser is
-#   installed on the same machine as the server.
-COOKIES_FILE = os.environ.get(
+
+COOKIES_FILE = Path(os.environ.get(
     "YTDLP_COOKIES_FILE",
     str(BASE_DIR / "cookies.txt"),
 )
-
+)
 COOKIES_FROM_BROWSER = os.environ.get(
     "YTDLP_COOKIES_FROM_BROWSER"
 )
-
 
 RENDER_COOKIE_FILE = Path(
     "/etc/secrets/cookies.txt"
@@ -73,8 +58,6 @@ def download_media(
     quality: str
 ) -> Path:
 
-
-
     job_directory = TEMP_DIR / job_id
     job_directory.mkdir(parents=True, exist_ok=True)
 
@@ -82,27 +65,25 @@ def download_media(
         job_directory / "%(title)s.%(ext)s"
     )
 
-    cookie_file = get_cookie_file()
-
-    if cookie_file:
-        options["cookiefile"] = cookie_file
+    
 
     options = {
     "outtmpl": output_template,
-
     "ffmpeg_location":
         FFMPEG_PATH,
-
     "noplaylist": True,
-
     "quiet": False,
-
     "progress_hooks": [
         create_progress_hook(
             job_id
         )
     ],
-}
+    }
+
+    cookie_file = get_cookie_file()
+
+    if cookie_file:
+        options["cookiefile"] = cookie_file
 
     if JS_RUNTIMES:
         options["js_runtimes"] = JS_RUNTIMES
@@ -335,17 +316,7 @@ def format_eta(
 
 
 def get_cookie_file() -> str | None:
-    configured_path = os.getenv(
-        "YTDLP_COOKIE_FILE"
-    )
 
-    if configured_path:
-        path = Path(
-            configured_path
-        )
-
-        if path.exists():
-            return str(path)
 
     if RENDER_COOKIE_FILE.exists():
         return str(

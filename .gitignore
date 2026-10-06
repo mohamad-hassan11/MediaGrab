@@ -16,3 +16,7 @@ desktop/MediaGrab/Tools/yt-dlp.exe
 desktop/MediaGrab/bin
 desktop/MediaGrab/obj
 desktop/.vs
+server/.venv
+server/app/__pycache__
+server/tools
+web/.vscode

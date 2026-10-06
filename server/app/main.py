@@ -50,6 +50,44 @@ def health():
         "status": "ok"
     }
 
+from pathlib import Path
+
+from .downloader import (
+    RENDER_COOKIE_FILE,
+    WRITABLE_COOKIE_FILE,
+    get_cookie_file,
+)
+
+
+@app.get("/debug/cookies")
+def debug_cookies():
+    cookie_file = get_cookie_file()
+
+    production_exists = RENDER_COOKIE_FILE.exists()
+    writable_exists = WRITABLE_COOKIE_FILE.exists()
+
+    production_size = (
+        RENDER_COOKIE_FILE.stat().st_size
+        if production_exists
+        else 0
+    )
+
+    writable_size = (
+        WRITABLE_COOKIE_FILE.stat().st_size
+        if writable_exists
+        else 0
+    )
+
+    return {
+        "render_cookie_exists": production_exists,
+        "render_cookie_size": production_size,
+
+        "writable_cookie_exists": writable_exists,
+        "writable_cookie_size": writable_size,
+
+        "yt_dlp_cookie_path": cookie_file,
+    }
+
 
 @app.post(
     "/api/jobs",

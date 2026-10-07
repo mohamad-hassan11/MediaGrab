@@ -18,7 +18,11 @@ from .models import (
 
 app = FastAPI(
     title="MediaGrab API",
-    version="0.1.0"
+    version="0.1.0",
+    openapi_url="/api/openapi.json",
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    swagger_ui_oauth2_redirect_url="/api/docs/oauth2-redirect",
 )
 
 # ALLOWED_ORIGINS is a comma-separated list of extra origins to allow
@@ -44,7 +48,7 @@ app.add_middleware(
 
 
 
-@app.get("/health")
+@app.get("/api/health")
 def health():
     return {
         "status": "ok"

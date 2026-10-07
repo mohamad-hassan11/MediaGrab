@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  process.env.NEXT_PUBLIC_API_URL ?? "";
 
 type DownloadType = "audio" | "video";
 type JobStatus = {

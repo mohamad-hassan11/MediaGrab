@@ -1,0 +1,30 @@
+services:
+
+  api:
+    build:
+      context: ./server
+
+    container_name: mediagrab-api
+
+    restart: unless-stopped
+
+    expose:
+      - "8000"
+
+    environment:
+      ALLOWED_ORIGINS: "https://mh-portfolio.nl"
+
+
+  web:
+    build:
+      context: ./web
+
+    container_name: mediagrab-web
+
+    restart: unless-stopped
+
+    depends_on:
+      - api
+
+    ports:
+      - "127.0.0.1:3000:3000"

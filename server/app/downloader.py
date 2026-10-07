@@ -1,9 +1,7 @@
 from pathlib import Path
 from .jobs import update_job
-import os
 import yt_dlp
 import shutil
-from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -28,26 +26,6 @@ if not FFMPEG_PATH:
 
 
 JS_RUNTIMES = {"node": {}} if shutil.which("node") else None
-
-
-COOKIES_FILE = Path(os.environ.get(
-    "YTDLP_COOKIES_FILE",
-    str(BASE_DIR / "cookies.txt"),
-)
-)
-
-
-RENDER_COOKIE_FILE = Path(
-    "/etc/secrets/cookies.txt"
-)
-
-WRITABLE_COOKIE_FILE = Path(
-    "/tmp/mediagrab-cookies.txt"
-)
-
-
-
-
 
 
 def download_media(
@@ -78,11 +56,6 @@ def download_media(
         )
     ],
     }
-
-    cookie_file = get_cookie_file()
-
-    if cookie_file:
-        options["cookiefile"] = cookie_file
 
     if JS_RUNTIMES:
         options["js_runtimes"] = JS_RUNTIMES
@@ -309,21 +282,4 @@ def format_eta(
     return (
         f"{minutes:02d}:"
         f"{seconds:02d}"
-    )
-
-
-def get_cookie_file() -> str | None:
-
-    if not RENDER_COOKIE_FILE.exists():
-        return None
-
-    shutil.copyfile(
-        RENDER_COOKIE_FILE,
-        WRITABLE_COOKIE_FILE
-    )
-
-    WRITABLE_COOKIE_FILE.chmod(0o600)
-
-    return str(
-        WRITABLE_COOKIE_FILE
     )

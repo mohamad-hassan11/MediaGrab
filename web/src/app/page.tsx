@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "";
@@ -35,6 +35,36 @@ export default function Home() {
   const [speed, setSpeed] = useState<string | null>(null);
 
   const [eta, setEta] = useState<string | null>(null);
+
+  // Theme state
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
+  useEffect(() => {
+    // Check for saved theme preference or system preference
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+    if (savedTheme) {
+      setTheme(savedTheme);
+    } else if (systemPrefersDark) {
+      setTheme('dark');
+    }
+  }, []);
+
+  useEffect(() => {
+    // Update class on html element
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(theme === 'light' ? 'dark' : 'light');
+  };
 
   const audioQualities = [
     { value: "best", label: "Best quality" },
@@ -213,18 +243,24 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-16">
+    <main className="min-h-screen bg-slate-50 px-4 py-16 dark:bg-slate-900">
       <div className="mx-auto max-w-2xl">
-        <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-          <header className="mb-8">
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-              MediaGrab
-            </h1>
-
-            <p className="mt-2 text-sm text-slate-500">
-              Download audio and video from supported media links.
-            </p>
+        <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <header className="mb-8 flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-slate-900">MediaGrab</h1>
+              <p className="mt-2 text-sm text-slate-500">Download audio and video from supported media links.</p>
+            </div>
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200"
+              aria-label="Toggle theme"
+            >
+              {theme === 'light' ? '🌙' : '☀️'}
+            </button>
           </header>
+
+
 
           <div className="space-y-6">
             {/* URL */}

@@ -40,30 +40,22 @@ export default function Home() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
-    // Check for saved theme preference or system preference
-    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const savedTheme = localStorage.getItem("theme");
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const initialTheme = savedTheme === "dark" || savedTheme === "light"
+      ? savedTheme
+      : prefersDark ? "dark" : "light";
 
-    if (savedTheme) {
-      setTheme(savedTheme);
-    } else if (systemPrefersDark) {
-      setTheme('dark');
-    }
+    document.documentElement.classList.toggle("dark", initialTheme === "dark");
+    const frame = window.requestAnimationFrame(() => setTheme(initialTheme));
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
-  useEffect(() => {
-    // Update class on html element
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  }, [theme]);
-
   const toggleTheme = () => {
-    setTheme(theme === 'light' ? 'dark' : 'light');
+    const nextTheme = theme === "light" ? "dark" : "light";
+    document.documentElement.classList.toggle("dark", nextTheme === "dark");
+    localStorage.setItem("theme", nextTheme);
+    setTheme(nextTheme);
   };
 
   const audioQualities = [
@@ -243,13 +235,13 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-16 dark:bg-slate-900">
+    <main className="min-h-screen bg-slate-50 px-4 py-16 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
       <div className="mx-auto max-w-2xl">
         <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-700 dark:bg-slate-800">
           <header className="mb-8 flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight text-slate-900">MediaGrab</h1>
-              <p className="mt-2 text-sm text-slate-500">Download audio and video from supported media links.</p>
+              <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">MediaGrab</h1>
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-300">Download audio and video from supported media links.</p>
             </div>
             <button
               onClick={toggleTheme}
@@ -268,7 +260,7 @@ export default function Home() {
             <div>
               <label
                 htmlFor="url"
-                className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-700"
+                className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-700 dark:text-slate-200"
               >
                 Media URL
               </label>
@@ -279,7 +271,7 @@ export default function Home() {
                 value={url}
                 onChange={(event) => setUrl(event.target.value)}
                 placeholder="Paste a media URL..."
-                className="h-12 w-full rounded-lg border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                className="h-12 w-full rounded-lg border border-slate-300 bg-white px-4 text-sm text-slate-900 placeholder:text-slate-500 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-500 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:border-blue-400 dark:focus:ring-blue-400/30"
               />
             </div>
 
@@ -289,7 +281,7 @@ export default function Home() {
               <div>
                 <label
                   htmlFor="format"
-                  className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-700"
+                  className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-700 dark:text-slate-200"
                 >
                   Download as
                 </label>
@@ -300,7 +292,7 @@ export default function Home() {
                   onChange={(event) =>
                     changeDownloadType(event.target.value as DownloadType)
                   }
-                  className="h-12 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="h-12 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-500 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/30"
                 >
                   <option value="audio">Audio (MP3)</option>
 
@@ -311,7 +303,7 @@ export default function Home() {
               <div>
                 <label
                   htmlFor="quality"
-                  className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-700"
+                  className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-700 dark:text-slate-200"
                 >
                   Quality
                 </label>
@@ -320,7 +312,7 @@ export default function Home() {
                   id="quality"
                   value={quality}
                   onChange={(event) => setQuality(event.target.value)}
-                  className="h-12 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="h-12 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-500 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/30"
                 >
                   {qualities.map((item) => (
                     <option key={item.value} value={item.value}>
@@ -344,19 +336,19 @@ export default function Home() {
 
             {/* Status */}
             {error && (
-              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-200">
                 {error}
               </div>
             )}
 
             <div>
               <div className="mb-2 flex items-center justify-between text-sm">
-                <span className="text-slate-700">{status}</span>
+                <span className="text-slate-700 dark:text-slate-200">{status}</span>
 
-                <span className="text-slate-500">{progress.toFixed(0)}%</span>
+                <span className="text-slate-500 dark:text-slate-300">{progress.toFixed(0)}%</span>
               </div>
 
-              <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+              <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
                 <div
                   className="h-full rounded-full bg-blue-600 transition-all duration-300"
                   style={{
@@ -366,7 +358,7 @@ export default function Home() {
               </div>
 
               {isDownloading && (speed || eta) && (
-                <div className="mt-2 flex justify-end gap-3 text-xs text-slate-500">
+                <div className="mt-2 flex justify-end gap-3 text-xs text-slate-500 dark:text-slate-300">
                   {speed && <span>{speed}</span>}
 
                   {eta && <span>{eta} remaining</span>}
@@ -376,7 +368,7 @@ export default function Home() {
           </div>
         </div>
 
-        <p className="mt-5 text-center text-xs text-slate-400">
+        <p className="mt-5 text-center text-xs text-slate-500 dark:text-slate-400">
           Only download media you have permission to save.
         </p>
       </div>
